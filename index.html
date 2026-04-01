@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>富山地鉄 就務カレンダー登録</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    background: #f5f5f5;
+    color: #111;
+    min-height: 100vh;
+  }
+  .header {
+    background: #111;
+    color: #fff;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-icon {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 2px solid #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .header-icon div {
+    width: 14px; height: 14px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+  }
+  .header h1 { font-size: 16px; font-weight: 500; }
+  .container { max-width: 480px; margin: 0 auto; padding: 12px; }
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 0;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  .tab.active { background: #111; color: #fff; }
+  .tab.inactive { background: #e8e8e8; color: #555; }
+  .card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+    border: 0.5px solid #e0e0e0;
+  }
+  .card-label {
+    font-size: 11px;
+    color: #888;
+    font-weight: 500;
+    margin-bottom: 10px;
+    letter-spacing: 0.3px;
+  }
+  .field-label {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  input[type="date"],
+  input[type="time"],
+  input[type="text"] {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #111;
+    background: #fafafa;
+    -webkit-appearance: none;
+    outline: none;
+  }
+  input:focus { border-color: #111; background: #fff; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .day-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .badge-weekday { background: #E6F1FB; color: #0C447C; }
+  .badge-saturday { background: #FAEEDA; color: #633806; }
+  .badge-holiday { background: #FCEBEB; color: #791F1F; }
+  .result-box {
+    background: #f0f7ff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border: 0.5px solid #B5D4F4;
+    margin-top: 4px;
+  }
+  .result-duty { font-size: 14px; font-weight: 500; color: #0C447C; margin-bottom: 8px; }
+  .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .time-block {
+    background: #fff;
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .time-lbl { font-size: 10px; color: #888; margin-bottom: 2px; }
+  .time-val { font-size: 22px; font-weight: 500; color: #111; }
+  .color-row { display: flex; gap: 8px; margin-top: 4px; }
+  .color-opt {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px solid #e0e0e0;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+    background: #fff;
+  }
+  .color-opt.selected { border-color: #111; background: #f5f5f5; }
+  .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-banana { background: #F6BF26; }
+  .dot-tomato { background: #D50000; }
+  .step-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 8px;
+  }
+  .step-num {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #111;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+  .btn {
+    flex: 1;
+    height: 46px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: #111; color: #fff; }
+  .btn-outline { background: #fff; color: #111; border: 1px solid #ccc; }
+  .btn-primary:hover { background: #333; }
+  .btn-outline:hover { background: #f5f5f5; }
+  .error-msg { font-size: 12px; color: #c00; margin-top: 6px; min-height: 18px; }
+  .info-msg { font-size: 12px; color: #555; margin-top: 8px; }
+  .success-msg { font-size: 12px; color: #1a7c3b; margin-top: 8px; }
+  .divider { border: none; border-top: 0.5px solid #eee; margin: 10px 0; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon"><div></div></div>
+  <h1>富山地鉄 就務カレンダー登録</h1>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('duty', this)">就務番号から登録</button>
+    <button class="tab inactive" onclick="switchTab('custom', this)">臨時就務を入力</button>
+  </div>
+
+  <!-- 就務番号タブ -->
+  <div id="tab-duty" class="tab-content active">
+    <div class="card">
+      <div class="card-label">① 日付と就務番号を入力</div>
+      <div class="row2">
+        <div>
+          <div class="field-label">日付</div>
+          <input type="date" id="duty-date" onchange="onDateChange()">
+        </div>
+        <div>
+          <div class="field-label">就務番号</div>
+          <input type="text" id="duty-num" placeholder="例：30" oninput="lookupDuty()">
+        </div>
+      </div>
+      <div id="day-badge"></div>
+      <div id="duty-result"></div>
+      <div id="duty-error" class="error-msg"></div>
+    </div>
+
+    <div id="color-card" class="card" style="display:none">
+      <div class="card-label">② カレンダーの色を選択</div>
+      <div class="color-row">
+        <div class="color-opt selected" id="opt-banana" onclick="selectColor('banana')">
+          <span class="dot dot-banana"></span>バナナ（黄）
+        </div>
+        <div class="color-opt" id="opt-tomato" onclick="selectColor('tomato')">
+          <span class="dot dot-tomato"></span>トマト（赤）
+        </div>
+      </div>
+    </div>
+
+    <div id="gcal-section" class="card" style="display:none">
+      <div class="card-label">③ Googleカレンダーへ登録</div>
+      <div class="step-row">
+        <div class="step-num">1</div>
+        <span>「Googleカレンダーで開く」をタップ</span>
+      </div>
+      <div class="step-row">
+        <div class="step-num">2</div>
+        <span>イベントの色を「<span id="color-label-d">バナナ</span>」に変更して保存</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="openGcal()">Googleカレンダーで開く ↗</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="copyIcal()">iCal形式でコピー</button>
+      </div>
+      <div id="gcal-msg" class="info-msg"></div>
+    </div>
+  </div>
+
+  <!-- 臨時就務タブ -->
+  <div id="tab-custom" class="tab-content">
+    <div class="card">
+      <div class="card-label">臨時就務の時間を入力</div>
+      <div style="margin-bottom:10px">
+        <div class="field-label">日付</div>
+        <input type="date" id="custom-date">
+      </div>
+      <div class="row2">
+        <div>
+          <div class="field-label">始業時間</div>
+          <input type="time" id="custom-start">
+        </div>
+        <div>
+          <div class="field-label">終業時間</div>
+          <input type="time" id="custom-end">
+        </div>
+      </div>
+      <div style="margin-bottom:10px">
+        <div class="field-label">タイトル（任意）</div>
+        <input type="text" id="custom-title" placeholder="臨時就務">
+      </div>
+      <hr class="divider">
+      <div class="card-label">カレンダーの色</div>
+      <div class="color-row">
+        <div class="color-opt selected" id="custom-opt-banana" onclick="selectCustomColor('banana')">
+          <span class="dot dot-banana"></span>バナナ（黄）
+        </div>
+        <div class="color-opt" id="custom-opt-tomato" onclick="selectCustomColor('tomato')">
+          <span class="dot dot-tomato"></span>トマト（赤）
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="openCustomGcal()">Googleカレンダーで開く ↗</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="copyCustomIcal()">iCal形式でコピー</button>
+      </div>
+      <div id="custom-error" class="error-msg"></div>
+      <div id="custom-msg" class="info-msg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const WEEKDAY = {
+  "1":["6:11","19:10"],"2A":["6:25","10:00"],"2B":["12:40","21:24"],
+  "3":["6:36","19:33"],"4":["5:51","9:18"],"5":["6:20","18:46"],
+  "6":["13:35","22:37"],"7":["14:14","22:27"],"8":["15:50","21:57"],
+  "9":["7:02","19:58"],"10A":["6:45","12:30"],"10B":["15:06","21:36"],
+  "11":["6:55","19:55"],"12":["5:40","10:21"],"13":["6:35","18:43"],
+  "14":["6:06","17:46"],"15":["6:00","18:43"],"16":["5:49","17:37"],
+  "17":["6:11","19:01"],"18A":["5:57","9:04"],"18B":["12:10","20:55"],
+  "19":["6:15","19:13"],"20":["5:41","11:03"],"21":["6:17","18:09"],
+  "22A":["6:50","11:34"],"22B":["14:00","21:37"],"23":["12:28","22:23"],
+  "24":["12:30","22:01"],"25":["7:08","19:59"],"26":["6:13","19:10"],
+  "27":["5:35","18:00"],"28":["5:32","9:10"],"29":["6:14","17:44"],
+  "30A":["6:18","13:11"],"30B":["16:21","21:08"],"31":["6:32","19:32"],
+  "32":["5:45","12:16"],"33":["6:11","19:10"],"34A":["6:06","12:51"],
+  "34B":["16:10","21:04"],"35":["6:31","18:24"],"36":["5:57","10:35"],
+  "37":["6:21","19:07"],"38":["15:14","22:57"],"39":["12:12","21:53"],
+  "40":["7:05","19:56"],"41":["6:25","19:04"],"42A":["6:20","9:32"],
+  "42B":["12:41","21:09"],"43":["6:23","18:10"],"44":["5:28","12:00"],
+  "45":["6:31","18:16"],"46A":["5:55","12:54"],"46B":["15:50","20:55"],
+  "47":["6:44","19:42"],"48":["5:51","9:38"],"49A":["6:16","11:28"],
+  "49B":["15:00","20:54"],"50":["7:05","20:04"],"51":["6:50","19:45"],
+  "52":["5:33","11:35"],"53":["6:55","19:55"],"54":["6:36","19:31"],
+  "55":["6:07","18:28"],"56":["5:45","11:38"],"57":["11:15","21:12"],
+  "58":["7:17","20:09"],"59":["6:43","19:29"],"60":["6:46","19:27"],
+  "101":["6:37","19:00"],"102":["13:51","20:17"],"103":["8:01","20:18"],
+  "104":["6:32","13:09"],"105":["8:32","20:09"],"106":["8:35","19:03"],
+  "107":["8:32","20:09"],"108":["8:35","17:33"],"109":["9:48","19:39"],
+  "110":["11:18","19:39"]
+};
+const SAT = {
+  "2A":["6:35","14:04"],"2B":["17:01","21:10"],"3":["6:55","19:41"],
+  "6":["11:55","22:03"],"7":["12:12","21:47"],"10A":["7:02","14:44"],
+  "10B":["16:36","21:12"],"11":["6:41","19:36"],"14":["6:15","18:19"],
+  "15":["5:53","18:31"],"18A":["6:00","11:05"],"18B":["15:35","20:59"],
+  "19":["6:21","18:50"],"22A":["7:00","14:39"],"22B":["18:35","22:00"],
+  "23":["12:13","22:15"],"26":["6:06","19:04"],"27":["5:38","18:18"],
+  "30A":["6:50","16:19"],"30B":["18:26","21:21"],"31":["7:00","19:06"],
+  "34A":["6:31","14:22"],"34B":["17:26","21:31"],"35":["7:39","19:37"],
+  "38":["12:55","22:40"],"39":["11:20","21:22"],"42A":["5:54","13:13"],
+  "42B":["16:02","20:53"],"43":["6:26","19:25"],"46A":["6:41","12:16"],
+  "46B":["14:06","21:33"],"47":["7:04","20:01"],"56":["5:45","11:38"],
+  "57":["11:15","21:12"],"58":["7:08","20:04"],"59":["6:05","18:30"],
+  "60":["6:12","18:46"],"61":["6:21","18:54"],"62":["6:17","19:11"],
+  "63":["6:45","19:14"],"64":["6:55","19:54"],"65":["7:30","20:11"],
+  "101":["7:08","16:48"],"103":["7:08","16:47"],"104":["9:11","15:26"],
+  "105":["8:32","20:09"],"106":["8:35","19:03"],"107":["8:32","20:09"],
+  "108":["8:35","17:33"],"109":["9:48","19:39"],"110":["11:18","19:39"]
+};
+const SUN = {
+  "2A":["6:35","14:04"],"2B":["17:01","21:10"],"3":["6:55","19:41"],
+  "6":["11:55","22:03"],"7":["12:12","21:47"],"10A":["7:02","14:44"],
+  "10B":["16:36","21:12"],"11":["6:41","19:36"],"14":["6:15","18:19"],
+  "15":["5:53","18:31"],"18A":["6:00","11:05"],"18B":["15:35","20:59"],
+  "19":["6:21","18:50"],"22A":["7:00","14:39"],"22B":["18:35","22:00"],
+  "23":["12:13","22:15"],"26":["6:06","19:04"],"27":["5:38","18:18"],
+  "30A":["6:50","16:19"],"30B":["18:26","21:21"],"31":["7:00","19:06"],
+  "34A":["6:31","14:22"],"34B":["17:26","21:31"],"35":["7:39","19:37"],
+  "38":["12:55","22:40"],"39":["11:20","21:22"],"42A":["5:54","13:13"],
+  "42B":["16:02","20:53"],"43":["6:26","19:25"],"46":["6:41","12:16"],
+  "47":["7:04","20:01"],"56":["5:45","11:38"],"57":["11:15","21:12"],
+  "58":["7:08","20:04"],"59":["6:05","18:30"],"60":["6:12","18:46"],
+  "61":["6:21","18:54"],"62":["6:17","19:11"],"63":["6:45","19:14"],
+  "64":["6:55","19:54"],"65":["7:30","20:11"],"105":["8:32","20:09"],
+  "106":["8:35","19:03"],"107":["8:32","20:09"],"108":["8:35","17:33"],
+  "109":["9:48","19:39"],"110":["11:18","19:39"]
+};
+const HOLIDAYS = [
+  "2026-04-29","2026-05-03","2026-05-04","2026-05-05","2026-05-06",
+  "2026-07-20","2026-08-11","2026-09-21","2026-09-22","2026-09-23",
+  "2026-10-12","2026-11-03","2026-11-23","2026-12-29","2026-12-30","2026-12-31"
+];
+
+let selColor = 'banana';
+let selCustomColor = 'banana';
+let foundDuty = null;
+
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.remove('active'); t.classList.add('inactive');
+  });
+  el.classList.add('active'); el.classList.remove('inactive');
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function getDayType(ds) {
+  if (HOLIDAYS.includes(ds)) return 'holiday';
+  const dow = new Date(ds).getDay();
+  if (dow === 0) return 'holiday';
+  if (dow === 6) return 'saturday';
+  return 'weekday';
+}
+
+function getDayNames(ds) {
+  const names = ['日','月','火','水','木','金','土'];
+  const d = new Date(ds);
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${names[d.getDay()]}）`;
+}
+
+function getDayBadge(type) {
+  if (type === 'holiday') return '<span class="day-badge badge-holiday">日祝ダイヤ</span>';
+  if (type === 'saturday') return '<span class="day-badge badge-saturday">土曜ダイヤ</span>';
+  return '<span class="day-badge badge-weekday">平日ダイヤ</span>';
+}
+
+function getSheet(type) {
+  if (type === 'holiday') return SUN;
+  if (type === 'saturday') return SAT;
+  return WEEKDAY;
+}
+
+function onDateChange() {
+  const d = document.getElementById('duty-date').value;
+  if (!d) { document.getElementById('day-badge').innerHTML = ''; return; }
+  document.getElementById('day-badge').innerHTML = getDayBadge(getDayType(d));
+  lookupDuty();
+}
+
+function lookupDuty() {
+  const d = document.getElementById('duty-date').value;
+  const n = document.getElementById('duty-num').value.trim().toUpperCase();
+  document.getElementById('duty-error').textContent = '';
+  document.getElementById('duty-result').innerHTML = '';
+  document.getElementById('color-card').style.display = 'none';
+  document.getElementById('gcal-section').style.display = 'none';
+  foundDuty = null;
+  if (!d || !n) return;
+  const type = getDayType(d);
+  const sheet = getSheet(type);
+  const typeName = type === 'weekday' ? '平日' : type === 'saturday' ? '土曜' : '日祝';
+
+  // 直接一致
+  if (sheet[n]) {
+    const times = sheet[n];
+    foundDuty = { date: d, num: n, start: times[0], end: times[1] };
+    document.getElementById('duty-result').innerHTML = makeSingleResult(d, n, times);
+    document.getElementById('color-card').style.display = '';
+    document.getElementById('gcal-section').style.display = '';
+    updateColorLabel();
+    return;
+  }
+
+  // A・B連続就務として検索
+  const timesA = sheet[n + 'A'];
+  const timesB = sheet[n + 'B'];
+  if (timesA || timesB) {
+    // A側をデフォルトのfoundDutyにセット（ボタンはA・B別に生成）
+    foundDuty = timesA
+      ? { date: d, num: n + 'A', start: timesA[0], end: timesA[1] }
+      : { date: d, num: n + 'B', start: timesB[0], end: timesB[1] };
+    document.getElementById('duty-result').innerHTML = makeABResult(d, n, timesA, timesB);
+    document.getElementById('color-card').style.display = '';
+    document.getElementById('gcal-section').style.display = 'none'; // AB個別ボタンで代替
+    updateColorLabel();
+    return;
+  }
+
+  document.getElementById('duty-error').textContent = `就務 ${n} は${typeName}ダイヤに存在しません`;
+}
+
+function makeSingleResult(d, n, times) {
+  return `
+    <div class="result-box">
+      <div style="font-size:12px;color:#555;margin-bottom:6px">${getDayNames(d)}</div>
+      <div class="result-duty">就務 ${n}</div>
+      <div class="time-grid">
+        <div class="time-block"><div class="time-lbl">始業</div><div class="time-val">${times[0]}</div></div>
+        <div class="time-block"><div class="time-lbl">終業</div><div class="time-val">${times[1]}</div></div>
+      </div>
+    </div>`;
+}
+
+function makeABResult(d, n, timesA, timesB) {
+  const blockA = timesA ? `
+    <div class="result-box" style="margin-bottom:8px">
+      <div class="result-duty">就務 ${n}A</div>
+      <div class="time-grid">
+        <div class="time-block"><div class="time-lbl">始業</div><div class="time-val">${timesA[0]}</div></div>
+        <div class="time-block"><div class="time-lbl">終業</div><div class="time-val">${timesA[1]}</div></div>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-primary" onclick="openGcalAB('${n}A','${timesA[0]}','${timesA[1]}')">カレンダーへ（A）↗</button>
+        <button class="btn btn-outline" onclick="copyIcalAB('${n}A','${timesA[0]}','${timesA[1]}')">iCalコピー（A）</button>
+      </div>
+    </div>` : '';
+  const blockB = timesB ? `
+    <div class="result-box">
+      <div class="result-duty">就務 ${n}B</div>
+      <div class="time-grid">
+        <div class="time-block"><div class="time-lbl">始業</div><div class="time-val">${timesB[0]}</div></div>
+        <div class="time-block"><div class="time-lbl">終業</div><div class="time-val">${timesB[1]}</div></div>
+      </div>
+      <div class="btn-row" style="margin-top:8px">
+        <button class="btn btn-primary" onclick="openGcalAB('${n}B','${timesB[0]}','${timesB[1]}')">カレンダーへ（B）↗</button>
+        <button class="btn btn-outline" onclick="copyIcalAB('${n}B','${timesB[0]}','${timesB[1]}')">iCalコピー（B）</button>
+      </div>
+    </div>` : '';
+  return `<div style="font-size:12px;color:#555;margin-bottom:8px">${getDayNames(d)}</div>${blockA}${blockB}`;
+}
+
+function openGcalAB(num, start, end) {
+  const d = document.getElementById('duty-date').value;
+  window.open(buildGcalUrl(d, start, end, num), '_blank');
+}
+
+function copyIcalAB(num, start, end) {
+  const d = document.getElementById('duty-date').value;
+  const text = buildIcal(d, start, end, num);
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('duty-error').className = 'success-msg';
+    document.getElementById('duty-error').textContent = 'クリップボードにコピーしました';
+    setTimeout(() => {
+      document.getElementById('duty-error').textContent = '';
+      document.getElementById('duty-error').className = 'error-msg';
+    }, 3000);
+  });
+}
+
+function selectColor(c) {
+  selColor = c;
+  document.getElementById('opt-banana').classList.toggle('selected', c === 'banana');
+  document.getElementById('opt-tomato').classList.toggle('selected', c === 'tomato');
+  updateColorLabel();
+}
+
+function selectCustomColor(c) {
+  selCustomColor = c;
+  document.getElementById('custom-opt-banana').classList.toggle('selected', c === 'banana');
+  document.getElementById('custom-opt-tomato').classList.toggle('selected', c === 'tomato');
+}
+
+function updateColorLabel() {
+  const el = document.getElementById('color-label-d');
+  if (el) el.textContent = selColor === 'banana' ? 'バナナ（黄色）' : 'トマト（赤色）';
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function buildGcalUrl(date, start, end, title) {
+  const [y, m, d] = date.split('-');
+  const [sh, sm] = start.split(':');
+  const [eh, em] = end.split(':');
+  const dtStart = `${y}${m}${d}T${pad(sh)}${pad(sm)}00`;
+  const dtEnd = `${y}${m}${d}T${pad(eh)}${pad(em)}00`;
+  const p = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${dtStart}/${dtEnd}`,
+    sf: 'true',
+    output: 'xml'
+  });
+  return `https://calendar.google.com/calendar/render?${p}`;
+}
+
+function buildIcal(date, start, end, title) {
+  const [y, m, d] = date.split('-');
+  const [sh, sm] = start.split(':');
+  const [eh, em] = end.split(':');
+  const now = new Date().toISOString().replace(/[-:.]/g,'').slice(0,15) + 'Z';
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//ToyamaChitetsu//DutyCalendar//JA',
+    'BEGIN:VEVENT',
+    `DTSTART;TZID=Asia/Tokyo:${y}${m}${d}T${pad(sh)}${pad(sm)}00`,
+    `DTEND;TZID=Asia/Tokyo:${y}${m}${d}T${pad(eh)}${pad(em)}00`,
+    `SUMMARY:${title}`,
+    `DTSTAMP:${now}`,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+}
+
+function openGcal() {
+  if (!foundDuty) return;
+  const { date, num, start, end } = foundDuty;
+  window.open(buildGcalUrl(date, start, end, num), '_blank');
+  document.getElementById('gcal-msg').textContent =
+    `※ 色「${selColor === 'banana' ? 'バナナ（黄）' : 'トマト（赤）'}」は手動で設定してください`;
+}
+
+function copyIcal() {
+  if (!foundDuty) return;
+  const { date, num, start, end } = foundDuty;
+  const text = buildIcal(date, start, end, num);
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('gcal-msg').className = 'success-msg';
+    document.getElementById('gcal-msg').textContent = 'クリップボードにコピーしました';
+    setTimeout(() => {
+      document.getElementById('gcal-msg').textContent = '';
+      document.getElementById('gcal-msg').className = 'info-msg';
+    }, 3000);
+  });
+}
+
+function openCustomGcal() {
+  const d = document.getElementById('custom-date').value;
+  const s = document.getElementById('custom-start').value;
+  const e = document.getElementById('custom-end').value;
+  const t = document.getElementById('custom-title').value.trim() || '臨時就務';
+  document.getElementById('custom-error').textContent = '';
+  if (!d || !s || !e) {
+    document.getElementById('custom-error').textContent = '日付・始業・終業を入力してください';
+    return;
+  }
+  window.open(buildGcalUrl(d, s, e, t), '_blank');
+  document.getElementById('custom-msg').textContent =
+    `※ 色「${selCustomColor === 'banana' ? 'バナナ（黄）' : 'トマト（赤）'}」は手動で設定してください`;
+}
+
+function copyCustomIcal() {
+  const d = document.getElementById('custom-date').value;
+  const s = document.getElementById('custom-start').value;
+  const e = document.getElementById('custom-end').value;
+  const t = document.getElementById('custom-title').value.trim() || '臨時就務';
+  document.getElementById('custom-error').textContent = '';
+  if (!d || !s || !e) {
+    document.getElementById('custom-error').textContent = '日付・始業・終業を入力してください';
+    return;
+  }
+  const text = buildIcal(d, s, e, t);
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('custom-msg').className = 'success-msg';
+    document.getElementById('custom-msg').textContent = 'クリップボードにコピーしました';
+    setTimeout(() => {
+      document.getElementById('custom-msg').textContent = '';
+      document.getElementById('custom-msg').className = 'info-msg';
+    }, 3000);
+  });
+}
+
+document.getElementById('duty-date').valueAsDate = new Date();
+onDateChange();
+</script>
+</body>
+</html>
