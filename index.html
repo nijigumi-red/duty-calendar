@@ -507,7 +507,13 @@ function buildGcalUrl(date, start, end, title, allday) {
   const [y, m, d] = date.split('-');
   let dates;
   if (allday) {
-    dates = `${y}${m}${d}/${y}${m}${d}`;
+    // Googleカレンダーの終日イベントは終了日に翌日を指定する必要がある
+    const next = new Date(date);
+    next.setDate(next.getDate() + 1);
+    const ny = next.getFullYear();
+    const nm = pad(next.getMonth() + 1);
+    const nd = pad(next.getDate());
+    dates = `${y}${m}${d}/${ny}${nm}${nd}`;
   } else {
     const [sh, sm] = start.split(':');
     const [eh, em] = end.split(':');
