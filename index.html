@@ -116,38 +116,28 @@
   }
   .time-lbl { font-size: 10px; color: #888; margin-bottom: 2px; }
   .time-val { font-size: 22px; font-weight: 500; color: #111; }
-  .allday-row {
+  .color-row { display: flex; gap: 8px; margin-top: 4px; }
+  .color-opt {
+    flex: 1;
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-    font-size: 14px;
-    color: #333;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1.5px solid #e0e0e0;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+    background: #fff;
   }
-  .toggle {
-    position: relative;
-    width: 44px; height: 26px;
+  .color-opt.selected { border-color: #111; background: #f5f5f5; }
+  .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
     flex-shrink: 0;
   }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider {
-    position: absolute; inset: 0;
-    background: #ccc;
-    border-radius: 26px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .toggle-slider:before {
-    content: '';
-    position: absolute;
-    width: 20px; height: 20px;
-    left: 3px; bottom: 3px;
-    background: #fff;
-    border-radius: 50%;
-    transition: transform 0.2s;
-  }
-  .toggle input:checked + .toggle-slider { background: #111; }
-  .toggle input:checked + .toggle-slider:before { transform: translateX(18px); }
+  .dot-banana { background: #F6BF26; }
+  .dot-tomato { background: #D50000; }
   .step-row {
     display: flex;
     align-items: flex-start;
@@ -223,11 +213,27 @@
       <div id="duty-error" class="error-msg"></div>
     </div>
 
+    <div id="color-card" class="card" style="display:none">
+      <div class="card-label">② カレンダーの色を選択</div>
+      <div class="color-row">
+        <div class="color-opt selected" id="opt-banana" onclick="selectColor('banana')">
+          <span class="dot dot-banana"></span>バナナ（黄）
+        </div>
+        <div class="color-opt" id="opt-tomato" onclick="selectColor('tomato')">
+          <span class="dot dot-tomato"></span>トマト（赤）
+        </div>
+      </div>
+    </div>
+
     <div id="gcal-section" class="card" style="display:none">
-      <div class="card-label">② Googleカレンダーへ登録</div>
+      <div class="card-label">③ Googleカレンダーへ登録</div>
       <div class="step-row">
         <div class="step-num">1</div>
-        <span>「Googleカレンダーで開く」をタップして保存</span>
+        <span>「Googleカレンダーで開く」をタップ</span>
+      </div>
+      <div class="step-row">
+        <div class="step-num">2</div>
+        <span>イベントの色を「<span id="color-label-d">バナナ</span>」に変更して保存</span>
       </div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="openGcal()">Googleカレンダーで開く ↗</button>
@@ -247,28 +253,29 @@
         <div class="field-label">日付</div>
         <input type="date" id="custom-date">
       </div>
-      <div class="allday-row">
-        <label class="toggle">
-          <input type="checkbox" id="custom-allday" onchange="toggleAllday()">
-          <span class="toggle-slider"></span>
-        </label>
-        <span>終日</span>
-      </div>
-      <div id="custom-time-fields">
-        <div class="row2">
-          <div>
-            <div class="field-label">始業時間</div>
-            <input type="time" id="custom-start">
-          </div>
-          <div>
-            <div class="field-label">終業時間</div>
-            <input type="time" id="custom-end">
-          </div>
+      <div class="row2">
+        <div>
+          <div class="field-label">始業時間</div>
+          <input type="time" id="custom-start">
+        </div>
+        <div>
+          <div class="field-label">終業時間</div>
+          <input type="time" id="custom-end">
         </div>
       </div>
       <div style="margin-bottom:10px">
         <div class="field-label">タイトル（任意）</div>
         <input type="text" id="custom-title" placeholder="臨時就務">
+      </div>
+      <hr class="divider">
+      <div class="card-label">カレンダーの色</div>
+      <div class="color-row">
+        <div class="color-opt selected" id="custom-opt-banana" onclick="selectCustomColor('banana')">
+          <span class="dot dot-banana"></span>バナナ（黄）
+        </div>
+        <div class="color-opt" id="custom-opt-tomato" onclick="selectCustomColor('tomato')">
+          <span class="dot dot-tomato"></span>トマト（赤）
+        </div>
       </div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="openCustomGcal()">Googleカレンダーで開く ↗</button>
@@ -406,6 +413,7 @@ function lookupDuty() {
   const n = document.getElementById('duty-num').value.trim().toUpperCase();
   document.getElementById('duty-error').textContent = '';
   document.getElementById('duty-result').innerHTML = '';
+  document.getElementById('color-card').style.display = 'none';
   document.getElementById('gcal-section').style.display = 'none';
   foundDuty = null;
   if (!d || !n) return;
@@ -418,7 +426,9 @@ function lookupDuty() {
     const times = sheet[n];
     foundDuty = { date: d, num: n, start: times[0], end: times[1] };
     document.getElementById('duty-result').innerHTML = makeSingleResult(d, n, times);
+    document.getElementById('color-card').style.display = '';
     document.getElementById('gcal-section').style.display = '';
+    updateColorLabel();
     return;
   }
 
@@ -431,7 +441,9 @@ function lookupDuty() {
       ? { date: d, num: n + 'A', start: timesA[0], end: timesA[1] }
       : { date: d, num: n + 'B', start: timesB[0], end: timesB[1] };
     document.getElementById('duty-result').innerHTML = makeABResult(d, n, timesA, timesB);
+    document.getElementById('color-card').style.display = '';
     document.getElementById('gcal-section').style.display = 'none'; // AB個別ボタンで代替
+    updateColorLabel();
     return;
   }
 
@@ -480,12 +492,12 @@ function makeABResult(d, n, timesA, timesB) {
 
 function openGcalAB(num, start, end) {
   const d = document.getElementById('duty-date').value;
-  window.open(buildGcalUrl(d, start, end, num, false), '_blank');
+  window.open(buildGcalUrl(d, start, end, num), '_blank');
 }
 
 function copyIcalAB(num, start, end) {
   const d = document.getElementById('duty-date').value;
-  const text = buildIcal(d, start, end, num, false);
+  const text = buildIcal(d, start, end, num);
   navigator.clipboard.writeText(text).then(() => {
     document.getElementById('duty-error').className = 'success-msg';
     document.getElementById('duty-error').textContent = 'クリップボードにコピーしました';
@@ -496,73 +508,73 @@ function copyIcalAB(num, start, end) {
   });
 }
 
-function pad(n) { return String(n).padStart(2, '0'); }
-
-function toggleAllday() {
-  const isAllday = document.getElementById('custom-allday').checked;
-  document.getElementById('custom-time-fields').style.display = isAllday ? 'none' : '';
+function selectColor(c) {
+  selColor = c;
+  document.getElementById('opt-banana').classList.toggle('selected', c === 'banana');
+  document.getElementById('opt-tomato').classList.toggle('selected', c === 'tomato');
+  updateColorLabel();
 }
 
-function buildGcalUrl(date, start, end, title, allday) {
+function selectCustomColor(c) {
+  selCustomColor = c;
+  document.getElementById('custom-opt-banana').classList.toggle('selected', c === 'banana');
+  document.getElementById('custom-opt-tomato').classList.toggle('selected', c === 'tomato');
+}
+
+function updateColorLabel() {
+  const el = document.getElementById('color-label-d');
+  if (el) el.textContent = selColor === 'banana' ? 'バナナ（黄色）' : 'トマト（赤色）';
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function buildGcalUrl(date, start, end, title) {
   const [y, m, d] = date.split('-');
-  let dates;
-  if (allday) {
-    // Googleカレンダーの終日イベントは終了日に翌日を指定する必要がある
-    const next = new Date(date);
-    next.setDate(next.getDate() + 1);
-    const ny = next.getFullYear();
-    const nm = pad(next.getMonth() + 1);
-    const nd = pad(next.getDate());
-    dates = `${y}${m}${d}/${ny}${nm}${nd}`;
-  } else {
-    const [sh, sm] = start.split(':');
-    const [eh, em] = end.split(':');
-    const dtStart = `${y}${m}${d}T${pad(sh)}${pad(sm)}00`;
-    const dtEnd = `${y}${m}${d}T${pad(eh)}${pad(em)}00`;
-    dates = `${dtStart}/${dtEnd}`;
-  }
+  const [sh, sm] = start.split(':');
+  const [eh, em] = end.split(':');
+  const dtStart = `${y}${m}${d}T${pad(sh)}${pad(sm)}00`;
+  const dtEnd = `${y}${m}${d}T${pad(eh)}${pad(em)}00`;
   const p = new URLSearchParams({
     action: 'TEMPLATE',
     text: title,
-    dates,
+    dates: `${dtStart}/${dtEnd}`,
     sf: 'true',
     output: 'xml'
   });
   return `https://calendar.google.com/calendar/render?${p}`;
 }
 
-function buildIcal(date, start, end, title, allday) {
+function buildIcal(date, start, end, title) {
   const [y, m, d] = date.split('-');
+  const [sh, sm] = start.split(':');
+  const [eh, em] = end.split(':');
   const now = new Date().toISOString().replace(/[-:.]/g,'').slice(0,15) + 'Z';
-  const lines = [
+  return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
     'PRODID:-//ToyamaChitetsu//DutyCalendar//JA',
     'BEGIN:VEVENT',
-  ];
-  if (allday) {
-    lines.push(`DTSTART;VALUE=DATE:${y}${m}${d}`);
-    lines.push(`DTEND;VALUE=DATE:${y}${m}${d}`);
-  } else {
-    const [sh, sm] = start.split(':');
-    const [eh, em] = end.split(':');
-    lines.push(`DTSTART;TZID=Asia/Tokyo:${y}${m}${d}T${pad(sh)}${pad(sm)}00`);
-    lines.push(`DTEND;TZID=Asia/Tokyo:${y}${m}${d}T${pad(eh)}${pad(em)}00`);
-  }
-  lines.push(`SUMMARY:${title}`, `DTSTAMP:${now}`, 'END:VEVENT', 'END:VCALENDAR');
-  return lines.join('\r\n');
+    `DTSTART;TZID=Asia/Tokyo:${y}${m}${d}T${pad(sh)}${pad(sm)}00`,
+    `DTEND;TZID=Asia/Tokyo:${y}${m}${d}T${pad(eh)}${pad(em)}00`,
+    `SUMMARY:${title}`,
+    `DTSTAMP:${now}`,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
 }
 
 function openGcal() {
   if (!foundDuty) return;
   const { date, num, start, end } = foundDuty;
-  window.open(buildGcalUrl(date, start, end, num, false), '_blank');
+  window.open(buildGcalUrl(date, start, end, num), '_blank');
+  document.getElementById('gcal-msg').textContent =
+    `※ 色「${selColor === 'banana' ? 'バナナ（黄）' : 'トマト（赤）'}」は手動で設定してください`;
 }
 
 function copyIcal() {
   if (!foundDuty) return;
   const { date, num, start, end } = foundDuty;
-  const text = buildIcal(date, start, end, num, false);
+  const text = buildIcal(date, start, end, num);
   navigator.clipboard.writeText(text).then(() => {
     document.getElementById('gcal-msg').className = 'success-msg';
     document.getElementById('gcal-msg').textContent = 'クリップボードにコピーしました';
@@ -575,38 +587,30 @@ function copyIcal() {
 
 function openCustomGcal() {
   const d = document.getElementById('custom-date').value;
-  const isAllday = document.getElementById('custom-allday').checked;
   const s = document.getElementById('custom-start').value;
   const e = document.getElementById('custom-end').value;
   const t = document.getElementById('custom-title').value.trim() || '臨時就務';
   document.getElementById('custom-error').textContent = '';
-  if (!d) {
-    document.getElementById('custom-error').textContent = '日付を入力してください';
+  if (!d || !s || !e) {
+    document.getElementById('custom-error').textContent = '日付・始業・終業を入力してください';
     return;
   }
-  if (!isAllday && (!s || !e)) {
-    document.getElementById('custom-error').textContent = '始業・終業を入力してください';
-    return;
-  }
-  window.open(buildGcalUrl(d, s, e, t, isAllday), '_blank');
+  window.open(buildGcalUrl(d, s, e, t), '_blank');
+  document.getElementById('custom-msg').textContent =
+    `※ 色「${selCustomColor === 'banana' ? 'バナナ（黄）' : 'トマト（赤）'}」は手動で設定してください`;
 }
 
 function copyCustomIcal() {
   const d = document.getElementById('custom-date').value;
-  const isAllday = document.getElementById('custom-allday').checked;
   const s = document.getElementById('custom-start').value;
   const e = document.getElementById('custom-end').value;
   const t = document.getElementById('custom-title').value.trim() || '臨時就務';
   document.getElementById('custom-error').textContent = '';
-  if (!d) {
-    document.getElementById('custom-error').textContent = '日付を入力してください';
+  if (!d || !s || !e) {
+    document.getElementById('custom-error').textContent = '日付・始業・終業を入力してください';
     return;
   }
-  if (!isAllday && (!s || !e)) {
-    document.getElementById('custom-error').textContent = '始業・終業を入力してください';
-    return;
-  }
-  const text = buildIcal(d, s, e, t, isAllday);
+  const text = buildIcal(d, s, e, t);
   navigator.clipboard.writeText(text).then(() => {
     document.getElementById('custom-msg').className = 'success-msg';
     document.getElementById('custom-msg').textContent = 'クリップボードにコピーしました';
